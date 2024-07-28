@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
@@ -27,6 +28,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,51 +43,107 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.rememberAsyncImagePainter
+import coil.compose.rememberImagePainter
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
 
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black)
-            )
-            {
+            val viewModel: MainViewModel = viewModel()
 
-                Column(
+            val popularMoviesState by viewModel.popularMovies.collectAsState()
+            val onlyOnNetflixState by viewModel.onlyOnNetflix.collectAsState()
+            val blockbusterMoviesState by viewModel.blockbusterMovies.collectAsState()
+            val popularTvShowsState by viewModel.popularTvShows.collectAsState()
+
+
+
+                Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(color = Color.Black)
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    TopUi()
-                    DifferentSections(showText = "Watch It Again")
-                    DifferentSections(showText = "Popular Movies")
-                    DifferentSections(showText = "Only on Netflix")
-                    DifferentSections(showText = "Blockbuster Action")
-                    DifferentSections(showText = "Popular Tv Shows")
+                        .background(Color.Black)
+                )
+                {
+
+//                Column(
+//                    modifier = Modifier
+//                        .fillMaxSize()
+//                        .background(color = Color.Black)
+//                        .verticalScroll(rememberScrollState())
+//                ) {
+//                    TopUi()
+//                    MovieScreen(
+//                        popularMovies = popularMoviesState.list,
+//                        onlyOnNetflix = onlyOnNetflixState.list,
+//                        blockbusterMovies = blockbusterMoviesState.list,
+//                        popularTvShows = popularTvShowsState.list
+//                    )
+//                }
+
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(color = Color.Black)
+                    ) {
+                        item {
+                            TopUi()
+                        }
+                        item {
+                            MovieScreen(
+                                popularMovies = popularMoviesState.list,
+                                onlyOnNetflix = onlyOnNetflixState.list,
+                                blockbusterMovies = blockbusterMoviesState.list,
+                                popularTvShows = popularTvShowsState.list
+                            )
+                        }
+                    }
+
+                    BottomMenu(
+                        item = listOf(
+                            BottomMenuContent("Home" , R.drawable.house_solid),
+                            BottomMenuContent("Coming Soon" , R.drawable.circle_play_regular),
+                            BottomMenuContent("Downloads" , R.drawable.download_solid)
+                        ),
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .height(85.dp)
+
+                    )
+
                 }
 
-                BottomMenu(
-                    item = listOf(
-                        BottomMenuContent("Home" , R.drawable.house_solid),
-                        BottomMenuContent("Coming Soon" , R.drawable.circle_play_regular),
-                        BottomMenuContent("Downloads" , R.drawable.download_solid)
-                    ),
-                    modifier = Modifier.align(Alignment.BottomCenter).
-                    height(85.dp)
 
-                )
 
-            }
+
 
 
         }
+
+
     }
 }
 
+@Composable
+fun MovieScreen(
+    popularMovies: List<MovieCategory>,
+    onlyOnNetflix: List<MovieCategory>,
+    blockbusterMovies: List<MovieCategory>,
+    popularTvShows: List<MovieCategory>
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+    ) {
+        DifferentSections(showText = "Popular Movies", movies = popularMovies)
+        DifferentSections(showText = "Blockbuster Movies", movies = blockbusterMovies)
+        DifferentSections(showText = "Only on Netflix", movies = onlyOnNetflix)
+        DifferentSections(showText = "Popular TV Shows", movies = popularTvShows)
+    }
+}
 @Composable
 fun BottomMenu(
     item : List<BottomMenuContent>,
@@ -185,7 +243,7 @@ fun TopUi() {
         )
     {
         Box(modifier = Modifier
-            .height(600.dp)
+            .height(550.dp)
             .width(750.dp))
         {
             
@@ -348,54 +406,49 @@ fun TopUi() {
 @Composable
 fun DifferentSections(
     showText : String,
-)
-{
+    movies : List<MovieCategory>
+) {
 
 
     Column(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxSize()
     )
     {
-        Text(text = showText, color = Color.LightGray,
-            fontSize = 24.sp,fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(top = 20.dp, start = 12.dp))
+        Text(
+            text = showText, color = Color.LightGray,
+            fontSize = 24.sp, fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(top = 20.dp, start = 12.dp)
+        )
 
-        LazyRow( modifier = Modifier.padding(top=4.dp)){
+        LazyRow(modifier = Modifier.padding(top = 4.dp)) {
 
-            itemsIndexed(imageShuffle()){
-                    index, item -> MoviesSection(imageRes = item.Image)
+
+
+            itemsIndexed(movies) { index, movie ->
+                MoviesSection(movie = movie)
+
+                 }
             }
         }
     }
-}
 
 @Composable
 fun MoviesSection(
-    imageRes: Int
-){
-    Image(painter = painterResource(id = imageRes),
-        contentDescription = null,
+    movie: MovieCategory
+) {
+    Column(
         modifier = Modifier
-            .height(180.dp)
-            .width(132.dp))
+            .padding(8.dp)
+    ) {
+        val imageUrl = "${Constants.ImageUrl}${movie.poster_path}"
+        Image(
+            painter = rememberAsyncImagePainter(imageUrl), contentDescription = null,
+            modifier = Modifier
+                .height(180.dp)
+                .width(132.dp)
+        )
+        Text(text = movie.title, color = Color.White)
+    }
 }
 
 
-fun imageShuffle(): List<MovieItemModel>{
-    var listOfMovies = mutableListOf<MovieItemModel>()
-    listOfMovies.add(MovieItemModel(R.drawable.poster_1))
-    listOfMovies.add(MovieItemModel(R.drawable.poster_2))
-    listOfMovies.add(MovieItemModel(R.drawable.poster_3))
-    listOfMovies.add(MovieItemModel(R.drawable.poster_4))
-    listOfMovies.add(MovieItemModel(R.drawable.poster_5))
-    listOfMovies.add(MovieItemModel(R.drawable.poster_6))
-    listOfMovies.add(MovieItemModel(R.drawable.poster_7))
-    listOfMovies.add(MovieItemModel(R.drawable.poster_8))
-    listOfMovies.add(MovieItemModel(R.drawable.breaking_bad))
-
-
-
-    listOfMovies.shuffle()
-    return listOfMovies
-
-}
